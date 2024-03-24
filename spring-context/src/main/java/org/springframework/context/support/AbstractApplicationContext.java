@@ -749,13 +749,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
-	 * <p>Replace any stub property sources with actual instances.
+	 * <p>用实际实例替换任何存根属性源。
+	 * <p>在子类中，通常可以通过覆盖此方法来初始化属性源。
+	 * * 例如，在 Web 应用程序上下文中，可以使用 {@link org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources} 方法来初始化属性源。
 	 *
 	 * @see org.springframework.core.env.PropertySource.StubPropertySource
 	 * @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
 	 */
 	protected void initPropertySources() {
-		// For subclasses: do nothing by default.
+		// 对于子类：默认情况下不执行任何操作。
 	}
 
 	/**
