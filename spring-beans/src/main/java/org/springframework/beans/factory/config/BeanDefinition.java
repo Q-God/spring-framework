@@ -133,7 +133,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	String getBeanClassName();
 
 	/**
-	 * Override the target scope of this bean, specifying a new scope name.
+	 * 覆盖此 bean 的目标SCOPE，指定新的SCOPE名称。
 	 *
 	 * @see #SCOPE_SINGLETON
 	 * @see #SCOPE_PROTOTYPE
@@ -141,65 +141,66 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	void setScope(@Nullable String scope);
 
 	/**
-	 * Return the name of the current target scope for this bean,
+	 * 返回当前bean 的目标SCOPE，
 	 * or {@code null} if not known yet.
 	 */
 	@Nullable
 	String getScope();
 
 	/**
-	 * Set whether this bean should be lazily initialized.
-	 * <p>If {@code false}, the bean will get instantiated on startup by bean
-	 * factories that perform eager initialization of singletons.
+	 * 设置当前 bean 是否懒加载初始化
+	 * <p>如果{@code false}，bean将在启动时由bean实例化
+	 * 执行单例急切初始化的工厂。
 	 */
 	void setLazyInit(boolean lazyInit);
 
 	/**
+	 * 返回当前 bean 是否懒加载初始化
 	 * Return whether this bean should be lazily initialized, i.e. not
 	 * eagerly instantiated on startup. Only applicable to a singleton bean.
 	 */
 	boolean isLazyInit();
 
 	/**
-	 * Set the names of the beans that this bean depends on being initialized.
-	 * The bean factory will guarantee that these beans get initialized first.
-	 * <p>Note that dependencies are normally expressed through bean properties or
-	 * constructor arguments. This property should just be necessary for other kinds
-	 * of dependencies like statics (*ugh*) or database preparation on startup.
+	 * 设置当前bean初始化所依赖的bean的名称。
+	 * bean 工厂将保证这些 bean 首先被初始化。
+	 * <p>请注意，依赖关系通常通过 bean 属性或
+	 * 构造函数参数。这个属性应该是其他类型所必需的
+	 * 依赖项，如启动时的静态数据（*呃*）或数据库准备。
 	 */
 	void setDependsOn(@Nullable String... dependsOn);
 
 	/**
-	 * Return the bean names that this bean depends on.
+	 * 获取当前Bean的依赖Bean
 	 */
 	@Nullable
 	String[] getDependsOn();
 
-	/**
-	 * Set whether this bean is a candidate for getting autowired into some other bean.
-	 * <p>Note that this flag is designed to only affect type-based autowiring.
-	 * It does not affect explicit references by name, which will get resolved even
-	 * if the specified bean is not marked as an autowire candidate. As a consequence,
-	 * autowiring by name will nevertheless inject a bean if the name matches.
+	/***
+	 * 设置此 bean 是否是自动连接到其他 bean 的候选者。
+	 * <p>请注意，此标志旨在仅影响基于类型的自动装配。
+	 * 它不会影响按名称显式引用，甚至会得到解决
+	 * 如果指定的 bean 未标记为自动装配候选者。作为结果，
+	 * 如果名称匹配，按名称自动装配仍然会注入一个 bean。
 	 */
 	void setAutowireCandidate(boolean autowireCandidate);
 
 	/**
-	 * Return whether this bean is a candidate for getting autowired into some other bean.
+	 * 返回此 bean 是否是自动装配到其他 bean 中的候选者。
 	 */
 	boolean isAutowireCandidate();
 
 	/**
-	 * Set whether this bean is a primary autowire candidate.
-	 * <p>If this value is {@code true} for exactly one bean among multiple
-	 * matching candidates, it will serve as a tie-breaker.
+	 * 设置此 bean 是否是优先自动装配候选者。 @Primary注解
+	 * <p>如果多个 bean 中的一个 bean 的值为 {@code true}
+	 * 匹配候选人，将作为决胜局。
 	 *
 	 * @see #setFallback
 	 */
 	void setPrimary(boolean primary);
 
 	/**
-	 * Return whether this bean is a primary autowire candidate.
+	 * 返回此 bean 是否是有优先自动装配候选者。
 	 */
 	boolean isPrimary();
 
@@ -341,9 +342,9 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	void setRole(int role);
 
 	/**
-	 * Get the role hint for this {@code BeanDefinition}. The role hint
-	 * provides the frameworks as well as tools an indication of
-	 * the role and importance of a particular {@code BeanDefinition}.
+	 * 获取此{@code BeanDefinition}的角色提示。角色提示
+	 * 提供框架以及工具来指示
+	 * 特定{@code BeanDefinition}的作用和重要性。
 	 *
 	 * @see #ROLE_APPLICATION
 	 * @see #ROLE_SUPPORT
@@ -352,14 +353,14 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	int getRole();
 
 	/**
-	 * Set a human-readable description of this bean definition.
+	 * 设置当前Bean定义的刻度描述
 	 *
 	 * @since 5.1
 	 */
 	void setDescription(@Nullable String description);
 
 	/**
-	 * Return a human-readable description of this bean definition.
+	 * 返回当前 bean 定义的可读的描述。
 	 */
 	@Nullable
 	String getDescription();
@@ -368,28 +369,30 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	// Read-only attributes
 
 	/**
-	 * Return a resolvable type for this bean definition,
-	 * based on the bean class or other specific metadata.
-	 * <p>This is typically fully resolved on a runtime-merged bean definition
-	 * but not necessarily on a configuration-time definition instance.
+	 * 返回bean 定义的解析类型，
+	 * 基于bean类或其他特定元数据。
+	 * <p>这通常在运行时合并的 bean 定义上完全解决
+	 * 但不一定在配置时定义实例上。
 	 *
-	 * @return the resolvable type (potentially {@link ResolvableType#NONE})
+	 * @return 可解析类型（可能是 {@link ResolvableType#NONE}）
 	 * @see ConfigurableBeanFactory#getMergedBeanDefinition
 	 * @since 5.2
 	 */
 	ResolvableType getResolvableType();
 
 	/**
-	 * Return whether this a <b>Singleton</b>, with a single, shared instance
-	 * returned on all calls.
+	 * 判断是否为单例Bean
+	 * 返回这是否是一个 <b>Singleton</b>，具有单个共享实例
+	 * 所有调用均返回。
 	 *
-	 * @see #SCOPE_SINGLETON
+	 * @参见#SCOPE_SINGLETON
 	 */
 	boolean isSingleton();
 
 	/**
-	 * Return whether this a <b>Prototype</b>, with an independent instance
-	 * returned for each call.
+	 * 判断是否为原型Bean
+	 * 返回这是否是一个<b>Prototype</b>，具有独立的实例
+	 * 每次调用都会返回。
 	 *
 	 * @see #SCOPE_PROTOTYPE
 	 * @since 3.0
@@ -397,23 +400,23 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	boolean isPrototype();
 
 	/**
-	 * Return whether this bean is "abstract", that is, not meant to be instantiated
-	 * itself but rather just serving as parent for concrete child bean definitions.
+	 * 返回此bean是否是“Abstract”的，即不打算被实例化
+	 * 本身，而只是充当具体子 bean 定义的父级。
 	 */
 	boolean isAbstract();
 
 	/**
-	 * Return a description of the resource that this bean definition
-	 * came from (for the purpose of showing context in case of errors).
+	 * 返回此bean定义的资源的描述
+	 * 来自（为了在出现错误时显示上下文）。
 	 */
 	@Nullable
 	String getResourceDescription();
 
 	/**
-	 * Return the originating BeanDefinition, or {@code null} if none.
-	 * <p>Allows for retrieving the decorated bean definition, if any.
-	 * <p>Note that this method returns the immediate originator. Iterate through the
-	 * originator chain to find the original BeanDefinition as defined by the user.
+	 * 返回原始 BeanDefinition，如果没有则返回 {@code null}。
+	 * <p>允许检索修饰的 bean 定义（如果有）。
+	 * <p>请注意，此方法返回直接发起者。迭代通过
+	 * 发起者链来查找用户定义的原始 BeanDefinition。
 	 */
 	@Nullable
 	BeanDefinition getOriginatingBeanDefinition();
