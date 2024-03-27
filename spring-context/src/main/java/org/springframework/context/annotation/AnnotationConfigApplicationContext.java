@@ -101,44 +101,46 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 
-
+		// 调用默认构造函数
 		this();
-
+		// 注册给定的组件类
 		register(componentClasses);
+		// 刷新上下文
 		refresh();
 	}
 
 	/**
-	 * Create a new AnnotationConfigApplicationContext, scanning for components
-	 * in the given packages, registering bean definitions for those components,
-	 * and automatically refreshing the context.
+	 * 创建一个新的 AnnotationConfigApplicationContext 实例，扫描给定的包以查找组件类，为这些组件注册 bean 定义，并自动刷新上下文。
 	 *
-	 * @param basePackages the packages to scan for component classes
+	 * @param basePackages 要扫描以查找组件类的包
 	 */
 	public AnnotationConfigApplicationContext(String... basePackages) {
+		// 调用默认构造函数
 		this();
+		// 扫描给定的包以查找组件类
 		scan(basePackages);
+		// 刷新上下文
 		refresh();
 	}
 
 
 	/**
-	 * Propagate the given custom {@code Environment} to the underlying
-	 * {@link AnnotatedBeanDefinitionReader} and {@link ClassPathBeanDefinitionScanner}.
+	 * 将给定的自定义 {@code Environment} 传播到底层的
+	 * {@link AnnotatedBeanDefinitionReader} 和 {@link ClassPathBeanDefinitionScanner}。
 	 */
 	@Override
 	public void setEnvironment(ConfigurableEnvironment environment) {
+		// 调用父类的设置环境方法
 		super.setEnvironment(environment);
+		// 将环境设置到注解的 Bean 定义阅读器和类路径 Bean 定义扫描器中
 		this.reader.setEnvironment(environment);
 		this.scanner.setEnvironment(environment);
 	}
 
 	/**
-	 * Provide a custom {@link BeanNameGenerator} for use with {@link AnnotatedBeanDefinitionReader}
-	 * and/or {@link ClassPathBeanDefinitionScanner}, if any.
-	 * <p>Default is {@link AnnotationBeanNameGenerator}.
-	 * <p>Any call to this method must occur prior to calls to {@link #register(Class...)}
-	 * and/or {@link #scan(String...)}.
+	 * 为 {@link AnnotatedBeanDefinitionReader} 和/或 {@link ClassPathBeanDefinitionScanner} 提供自定义的 {@link BeanNameGenerator}。
+	 * <p>默认值为 {@link AnnotationBeanNameGenerator}。
+	 * <p>调用此方法必须在调用 {@link #register(Class...)} 和/或 {@link #scan(String...)} 之前发生。
 	 *
 	 * @see AnnotatedBeanDefinitionReader#setBeanNameGenerator
 	 * @see ClassPathBeanDefinitionScanner#setBeanNameGenerator
@@ -146,19 +148,21 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @see FullyQualifiedAnnotationBeanNameGenerator
 	 */
 	public void setBeanNameGenerator(BeanNameGenerator beanNameGenerator) {
+		// 将 Bean 名称生成器设置到注解的 Bean 定义阅读器和类路径 Bean 定义扫描器中
 		this.reader.setBeanNameGenerator(beanNameGenerator);
 		this.scanner.setBeanNameGenerator(beanNameGenerator);
+		// 将 Bean 名称生成器注册为单例 bean
 		getBeanFactory().registerSingleton(
 				AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR, beanNameGenerator);
 	}
 
 	/**
-	 * Set the {@link ScopeMetadataResolver} to use for registered component classes.
-	 * <p>The default is an {@link AnnotationScopeMetadataResolver}.
-	 * <p>Any call to this method must occur prior to calls to {@link #register(Class...)}
-	 * and/or {@link #scan(String...)}.
+	 * 设置要用于注册的组件类的 {@link ScopeMetadataResolver}。
+	 * <p>默认为 {@link AnnotationScopeMetadataResolver}。
+	 * <p>调用此方法必须在调用 {@link #register(Class...)} 和/或 {@link #scan(String...)} 之前发生。
 	 */
 	public void setScopeMetadataResolver(ScopeMetadataResolver scopeMetadataResolver) {
+		// 设置Scope元数据解析器到注解的 Bean 定义阅读器和类路径 Bean 定义扫描器中
 		this.reader.setScopeMetadataResolver(scopeMetadataResolver);
 		this.scanner.setScopeMetadataResolver(scopeMetadataResolver);
 	}
@@ -169,51 +173,56 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	//---------------------------------------------------------------------
 
 	/**
-	 * Register one or more component classes to be processed.
-	 * <p>Note that {@link #refresh()} must be called in order for the context
-	 * to fully process the new classes.
+	 * 注册一个或多个要处理的组件类。
+	 * <p>请注意，必须调用 {@link #refresh()} 才能使上下文完全处理新类。
 	 *
-	 * @param componentClasses one or more component classes &mdash; for example,
-	 *                         {@link Configuration @Configuration} classes
+	 * @param componentClasses 一个或多个组件类，例如 {@link Configuration @Configuration} 类
 	 * @see #scan(String...)
 	 * @see #refresh()
 	 */
 	@Override
 	public void register(Class<?>... componentClasses) {
+		// 检查组件类数组是否为空
 		Assert.notEmpty(componentClasses, "At least one component class must be specified");
+		// 启动性能监视器
 		StartupStep registerComponentClass = getApplicationStartup().start("spring.context.component-classes.register")
 				.tag("classes", () -> Arrays.toString(componentClasses));
+		// 向注解的 Bean 定义阅读器注册组件类
 		this.reader.register(componentClasses);
+		// 结束性能监视器
 		registerComponentClass.end();
 	}
 
 	/**
-	 * Perform a scan within the specified base packages.
-	 * <p>Note that {@link #refresh()} must be called in order for the context
-	 * to fully process the new classes.
+	 * 在指定的基础包中执行扫描。
+	 * <p>请注意，必须调用 {@link #refresh()} 才能使上下文完全处理新类。
 	 *
-	 * @param basePackages the packages to scan for component classes
+	 * @param basePackages 要扫描的基础包
 	 * @see #register(Class...)
 	 * @see #refresh()
 	 */
 	@Override
 	public void scan(String... basePackages) {
+		// 检查基础包数组是否为空
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+		// 启动性能监视器
 		StartupStep scanPackages = getApplicationStartup().start("spring.context.base-packages.scan")
 				.tag("packages", () -> Arrays.toString(basePackages));
+		// 扫描指定的基础包
 		this.scanner.scan(basePackages);
+		// 结束性能监视器
 		scanPackages.end();
 	}
 
 
 	//---------------------------------------------------------------------
-	// Adapt superclass registerBean calls to AnnotatedBeanDefinitionReader
+	// 将超类的 registerBean 调用适配到 AnnotatedBeanDefinitionReader。
 	//---------------------------------------------------------------------
 
 	@Override
 	public <T> void registerBean(@Nullable String beanName, Class<T> beanClass,
 								 @Nullable Supplier<T> supplier, BeanDefinitionCustomizer... customizers) {
-
+		// 调用注解的 Bean 定义阅读器的注册 bean 方法
 		this.reader.registerBean(beanClass, beanName, supplier, customizers);
 	}
 
