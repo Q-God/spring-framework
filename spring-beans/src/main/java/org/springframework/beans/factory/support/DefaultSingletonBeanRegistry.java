@@ -354,96 +354,123 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	}
 
 	/**
-	 * Return the (raw) singleton object registered under the given name,
-	 * creating and registering a new one if none registered yet.
+	 * 返回在给定名称下注册的（原始）单例对象，如果尚未注册，则创建并注册一个新的。
 	 *
-	 * @param beanName         the name of the bean
-	 * @param singletonFactory the ObjectFactory to lazily create the singleton
-	 *                         with, if necessary
-	 * @return the registered singleton object
+	 * @param beanName         Bean的名称
+	 * @param singletonFactory 用于延迟创建单例的ObjectFactory（必要时）
+	 * @return 注册的单例对象
 	 */
 	public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
+		// 确保 beanName 不为 null
 		Assert.notNull(beanName, "Bean name must not be null");
-
+		// 检查当前线程是否允许持有单例锁
 		boolean acquireLock = isCurrentThreadAllowedToHoldSingletonLock();
+		// 尝试获取单例锁
 		boolean locked = (acquireLock && this.singletonLock.tryLock());
 		try {
+			// 从一级缓存中获取单例对象
 			Object singletonObject = this.singletonObjects.get(beanName);
+			//从一级缓存中没拿到
 			if (singletonObject == null) {
+				// 如果当前线程允许持有单例锁
 				if (acquireLock) {
+					// 如果成功获取到单例锁
 					if (locked) {
+						//单例创建线程为当前线程
 						this.singletonCreationThread = Thread.currentThread();
 					} else {
 						Thread threadWithLock = this.singletonCreationThread;
 						if (threadWithLock != null) {
-							// Another thread is busy in a singleton factory callback, potentially blocked.
-							// Fallback as of 6.2: process given singleton bean outside of singleton lock.
-							// Thread-safe exposure is still guaranteed, there is just a risk of collisions
-							// when triggering creation of other beans as dependencies of the current bean.
+							// 另一个线程正在忙于单例工厂回调，可能被阻塞。
+							// 自 Spring 6.2 开始的新策略：在单例锁之外处理给定的单例 bean。
+							// 仍然保证了线程安全性，只是在触发其他 bean 的创建时存在冲突的风险，因为它们可能是当前 bean 的依赖项。
 							if (logger.isInfoEnabled()) {
+								//打印info级别日志
 								logger.info("Creating singleton bean '" + beanName + "' in thread \"" +
 										Thread.currentThread().getName() + "\" while thread \"" + threadWithLock.getName() +
 										"\" holds singleton lock for other beans " + this.singletonsCurrentlyInCreation);
 							}
 						} else {
-							// Singleton lock currently held by some other registration method -> wait.
+							// 单例锁当前由某些其他注册方法持有 -> 等待
 							this.singletonLock.lock();
 							locked = true;
-							// Singleton object might have possibly appeared in the meantime.
+							/// 单例对象可能在此期间出现。从一级缓存中获取单例对象
 							singletonObject = this.singletonObjects.get(beanName);
+							//拿到了直接返回
 							if (singletonObject != null) {
 								return singletonObject;
 							}
 						}
 					}
 				}
-
+				// 如果当前单例工厂对象正在销毁中，则抛出异常
 				if (this.singletonsCurrentlyInDestruction) {
 					throw new BeanCreationNotAllowedException(beanName,
 							"Singleton bean creation not allowed while singletons of this factory are in destruction " +
 									"(Do not request a bean from a BeanFactory in a destroy method implementation!)");
 				}
+				// 打印debug级别日志
 				if (logger.isDebugEnabled()) {
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
+				//在创建单例对象之前执行相应的处理
+				//标记当前的bean马上就要被创建了
+				//singletonsCurrentlyInCreation 在这里会把beanName加入进来，若第二次循环依赖（构造器注入会抛出异常）
 				beforeSingletonCreation(beanName);
+				//标记是否为新创建的单例Bean
 				boolean newSingleton = false;
+				//标记是否记录抑制异常
 				boolean recordSuppressedExceptions = (locked && this.suppressedExceptions == null);
+				//如果为空，创建抑制异常集合
 				if (recordSuppressedExceptions) {
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
+				// 设置当前线程为单例创建线程
 				this.singletonCreationThread = Thread.currentThread();
 				try {
+					// 初始化 bean
+					// 这个过程其实是调用 createBean() 方法
 					singletonObject = singletonFactory.getObject();
+					//标记这个Bean是新创建的
 					newSingleton = true;
 				} catch (IllegalStateException ex) {
 					// Has the singleton object implicitly appeared in the meantime ->
 					// if yes, proceed with it since the exception indicates that state.
+					//在此期间是否隐式创建了单例对象 -> 如果是，则继续处理它，因为异常指该状态。
 					singletonObject = this.singletonObjects.get(beanName);
+					//一级缓存中没有，抛出异常
 					if (singletonObject == null) {
 						throw ex;
 					}
 				} catch (BeanCreationException ex) {
 					if (recordSuppressedExceptions) {
+						//遍历抑制异常集合，添加相关原因
 						for (Exception suppressedException : this.suppressedExceptions) {
 							ex.addRelatedCause(suppressedException);
 						}
 					}
 					throw ex;
 				} finally {
+					//清理singletonCreationThread线程
 					this.singletonCreationThread = null;
+					//记录抑制异常集合置空，复用
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
+					//后置处理
+					//主要做的事情就是把singletonsCurrentlyInCreation标记正在创建的bean从集合中移除
 					afterSingletonCreation(beanName);
 				}
+				//是新建的单例Bean，添加到一级缓存中去
 				if (newSingleton) {
 					addSingleton(beanName, singletonObject);
 				}
 			}
+			//返回单例Bean
 			return singletonObject;
 		} finally {
 			if (locked) {
+				//释放单例锁
 				this.singletonLock.unlock();
 			}
 		}
@@ -773,67 +800,82 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	}
 
 	/**
-	 * Destroy the given bean. Must destroy beans that depend on the given
-	 * bean before the bean itself. Should not throw any exceptions.
+	 * 销毁给定的bean。必须先销毁依赖于给定bean的bean，然后再销毁bean本身。不应抛出任何异常。
 	 *
-	 * @param beanName the name of the bean
-	 * @param bean     the bean instance to destroy
+	 * @param beanName 要销毁的bean的名称
+	 * @param bean     要销毁的bean实例
 	 */
 	protected void destroyBean(String beanName, @Nullable DisposableBean bean) {
-		// Trigger destruction of dependent beans first...
+		// 首先触发销毁依赖于当前bean的其他bean...
 		Set<String> dependentBeanNames;
 		synchronized (this.dependentBeanMap) {
-			// Within full synchronization in order to guarantee a disconnected Set
+			// 在完全同步的情况下，以确保获得一个不相关的Set
 			dependentBeanNames = this.dependentBeanMap.remove(beanName);
 		}
+		//当前Bean依赖其他的bean 依赖集合不为空，循环销毁依赖的单例Bean
 		if (dependentBeanNames != null) {
+			//trace日志
 			if (logger.isTraceEnabled()) {
 				logger.trace("Retrieved dependent beans for bean '" + beanName + "': " + dependentBeanNames);
 			}
+			// 逐个销毁依赖于当前bean的其他bean
 			for (String dependentBeanName : dependentBeanNames) {
 				destroySingleton(dependentBeanName);
 			}
 		}
 
-		// Actually destroy the bean now...
+		// 实际销毁当前bean...
 		if (bean != null) {
 			try {
+				//销毁Bean
 				bean.destroy();
 			} catch (Throwable ex) {
+				// 捕获异常并记录警告日志，但不抛出异常
 				if (logger.isWarnEnabled()) {
 					logger.warn("Destruction of bean with name '" + beanName + "' threw an exception", ex);
 				}
 			}
 		}
 
-		// Trigger destruction of contained beans...
+		// 触发销毁当前bean包含的其他bean...
 		Set<String> containedBeans;
 		synchronized (this.containedBeanMap) {
-			// Within full synchronization in order to guarantee a disconnected Set
+			// 在完全同步的情况下，以确保获得一个不相关的Set
 			containedBeans = this.containedBeanMap.remove(beanName);
 		}
 		if (containedBeans != null) {
+			// 逐个销毁当前bean包含的其他bean
 			for (String containedBeanName : containedBeans) {
 				destroySingleton(containedBeanName);
 			}
 		}
 
-		// Remove destroyed bean from other beans' dependencies.
+		//销毁dependentBeanMap 中 Bean的依赖
 		synchronized (this.dependentBeanMap) {
 			for (Iterator<Map.Entry<String, Set<String>>> it = this.dependentBeanMap.entrySet().iterator(); it.hasNext(); ) {
 				Map.Entry<String, Set<String>> entry = it.next();
 				Set<String> dependenciesToClean = entry.getValue();
 				dependenciesToClean.remove(beanName);
+				// 逐个销毁当前bean包含的其他bean
 				if (dependenciesToClean.isEmpty()) {
 					it.remove();
 				}
 			}
 		}
 
-		// Remove destroyed bean's prepared dependency information.
+		// 移除已销毁 bean 的的依赖信息
 		this.dependenciesForBeanMap.remove(beanName);
 	}
 
+
+	/**
+	 * 6.2版本已经弃用
+	 * 将单例互斥体暴露给子类和外部合作者。 如果子类执行任何类型的扩展单例创建阶段，
+	 * 它们应该在给定的对象上同步。特别是子类不应该在单例创建中使用它们自己的互斥锁，
+	 * 以避免在惰性初始化情况下潜在的死锁。
+	 *
+	 * @return
+	 */
 	@Deprecated(since = "6.2")
 	@Override
 	public final Object getSingletonMutex() {
