@@ -16,10 +16,6 @@
 
 package org.springframework.context.annotation;
 
-import java.util.Set;
-
-import org.w3c.dom.Element;
-
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
@@ -27,37 +23,43 @@ import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.lang.Nullable;
+import org.w3c.dom.Element;
+
+import java.util.Set;
 
 /**
- * Parser for the &lt;context:annotation-config/&gt; element.
+ * 用于解析 &lt;context:annotation-config/&gt; 元素的解析器。
+ * <p>
+ * 这个解析器的作用是为 &lt;context:annotation-config/&gt; 元素注册相关的 BeanPostProcessors。
  *
  * @author Mark Fisher
  * @author Juergen Hoeller
  * @author Christian Dupuis
- * @since 2.5
  * @see AnnotationConfigUtils
+ * @since 2.5
  */
 public class AnnotationConfigBeanDefinitionParser implements BeanDefinitionParser {
 
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
+		// 提取元素的来源对象
 		Object source = parserContext.extractSource(element);
 
-		// Obtain bean definitions for all relevant BeanPostProcessors.
+		// 获取所有相关 BeanPostProcessors 的 bean 定义
 		Set<BeanDefinitionHolder> processorDefinitions =
 				AnnotationConfigUtils.registerAnnotationConfigProcessors(parserContext.getRegistry(), source);
 
-		// Register component for the surrounding <context:annotation-config> element.
+		// 为周围的 <context:annotation-config> 元素注册组件
 		CompositeComponentDefinition compDefinition = new CompositeComponentDefinition(element.getTagName(), source);
 		parserContext.pushContainingComponent(compDefinition);
 
-		// Nest the concrete beans in the surrounding component.
+		// 将具体的 bean 嵌套在周围的组件中
 		for (BeanDefinitionHolder processorDefinition : processorDefinitions) {
 			parserContext.registerComponent(new BeanComponentDefinition(processorDefinition));
 		}
 
-		// Finally register the composite component.
+		// 最后注册组合组件
 		parserContext.popAndRegisterContainingComponent();
 
 		return null;
